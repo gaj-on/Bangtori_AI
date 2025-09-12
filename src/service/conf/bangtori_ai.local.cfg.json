@@ -15,12 +15,8 @@
     },
     
     "llm": {
-      "models": {
-        "default": {
-          "provider": "ollama",
-          "model": "llama3.2"
-        }
-      }
+      "provider": "ollama",
+      "model": "llama3.2"
     },
     
     "logger": {

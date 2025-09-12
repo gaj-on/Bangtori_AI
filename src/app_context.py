@@ -28,13 +28,6 @@ class HTTPConfig(BaseModel):
     allow_methods: list[str]
     allow_headers: list[str]
     allow_credentials: bool
-    
-class LLMModelConfig(BaseModel):
-    provider: str
-    model: str
-
-class LLMConfig(BaseModel):
-    models: dict[str, LLMModelConfig]
 
 class AppConfig(BaseModel):
     # 상위 항목 직접 정의
@@ -55,8 +48,6 @@ class AppConfig(BaseModel):
     monitoring_interval: Optional[int] = 10
 
     # 서비스 관련
-    llm: Optional[LLMConfig] = None
-
 
 class AppContext:
     def __init__(self):
@@ -112,33 +103,3 @@ class AppContext:
         self.log.debug("+ start init LLMs")
 
         self.llm_manager = {}
-
-        if self.cfg.llm:
-            from src.service.ai.llm_base_manager import BaseLLMManager, load_all_llm_managers
-            load_all_llm_managers()
-
-            for cls in BaseLLMManager.__subclasses__():
-                model_key = getattr(cls, "model_key", None)
-                manager_key = getattr(cls, "manager_key", None)
-
-                if not model_key or not manager_key:
-                    self.log.warning(f"[LLM]     !! {cls.__name__} missing model_key or manager_key")
-                    continue
-
-                if model_key not in self.cfg.llm.models:
-                    self.log.warning(f"[LLM]     !! No model config found for model_key '{model_key}'")
-                    continue
-
-                instance = cls(self)
-                try:
-                    instance.init()
-                    self.llm_manager[manager_key] = instance
-                    self.log.debug(f"[LLM]     - Registered LLM manager '{manager_key}' using model '{model_key}' ({cls.__name__})")
-                except Exception as e:
-                    self.log.error(f"[LLM]     !! Failed to init {cls.__name__}: {e}")
-        else:
-            self.log.warning("[LLM]     !! No LLM config found")
-
-        self.log.debug("- end init LLMs")
-
-    # TODO _destroy() 메서드 추가
