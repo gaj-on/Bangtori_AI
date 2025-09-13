@@ -1,0 +1,49 @@
+{
+  "dust": {
+    "unit": "μg/m³",
+    "levels": {
+      "very_good": [0, 15],
+      "good": [16, 35],
+      "normal": [36, 75],
+      "bad": [76, 100],
+      "very_bad": [101, 500]
+    }
+  },
+  "tvoc": {
+    "unit": "ppb",
+    "levels": {
+      "very_good": [0, 200],
+      "good": [201, 300],
+      "normal": [301, 400],
+      "bad": [401, 600],
+      "very_bad": [601, 5000]
+    }
+  },
+  "co2": {
+    "unit": "ppm",
+    "levels": {
+      "very_good": [400, 700],
+      "normal": [701, 1000],
+      "bad": [1001, 1500],
+      "very_bad": [1501, 5000]
+    }
+  },
+  "temp": {
+    "unit": "°C",
+    "levels": {
+      "very_good": [21, 25],
+      "normal": [20, 26],
+      "bad": [18, 28],
+      "very_bad": [0, 17]
+    }
+  },
+  "humi": {
+    "unit": "%",
+    "levels": {
+      "very_good": [40, 60],
+      "normal": [35, 65],
+      "bad": [30, 70],
+      "very_bad": [0, 29]
+    }
+  }
+}
