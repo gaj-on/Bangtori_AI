@@ -54,12 +54,20 @@ GENERATE_DAILY_REPORT = """
     "두 번째 분석 문장",
     "세 번째 분석 문장"
   ],
-  "aiDailyScore": 0~100 사이의 정수
+  "aiDailyScore": 0~100 사이의 정수,
+  "deviceControlList": {
+      "fan": bool,
+      "ac": bool,
+      "robot": bool,
+      "heat": bool
+  }
 }
 
 - aiDailyReport는 하루 상태를 한 문장으로 요약합니다.
+
 - aiAnalysis는 다음과 같이 구성된 3개의 분석 결과입니다:
   - 문제 진단과 해결 방안으로 구성된 40자 이하의 한 문장.
+
 - aiDailyScore는 다음 등급 구간을 따릅니다:
   - 90~100점: 매우 좋음
   - 80~89점: 좋음
@@ -68,11 +76,36 @@ GENERATE_DAILY_REPORT = """
   - 40~54점: 나쁨
   - 0~39점: 매우 나쁨
 
+- deviceControlList는 환경 상태와 현재 가전 상태를 바탕으로 필요한 제어를 결정합니다.
+  - fan: 환풍기
+  - ac: 에어컨
+  - robot: 로봇청소기
+  - heat: 난방기
+  - true는 전원을 켜야 함을 의미하고, false는 꺼야 함을 의미합니다.
+
+- 아래 제어 기준을 참고하여 판단합니다:
+  - 환풍기(fan) 제어 기준:
+    - CO2 평균 > 1000ppm → fan: true
+    - TVOC 평균 > 400ppb → fan: true
+    - PM2.5 평균 > 75 → fan: true
+  - 에어컨(ac) 제어 기준:
+    - 온도 평균 > 28도 → ac: true
+  - 난방기(heat) 제어 기준:
+    - 온도 평균 < 18도 → heat: true
+  - 로봇청소기(robot) 제어 기준:
+    - PM2.5 평균 > 75 AND 현재 로봇청소기가 꺼져 있으면 → robot: true
+
 # 입력 데이터
 다음은 24시간 동안 수집된 환경 데이터입니다. 이를 기반으로 평가를 진행하세요.
 
 [INPUT_DATA]
-{{ input_data }}
+{{ metrics }}
+
+# 현재 가전 상태
+현재 가전 on/off 상태도 참고하여 판단해야 합니다.
+
+[DEVICE_STATUS]
+{{ deviceStatus }}
 """
 
 GENERATE_MONTHLY_REPORT = """

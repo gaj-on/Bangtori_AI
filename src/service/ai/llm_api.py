@@ -27,6 +27,12 @@ async def dailyReport(request: Request):
                 "tvoc": [600, 720, 680, 650], 
                 "temp": [24.1, 24.3, 23.9, 24.0],
                 "humi": [45, 48, 50, 46] 
+            },
+            "deviceStatus": {
+                "fan": True,
+                "ac": False,
+                "robot": False,
+                "heat": True
             }
         },
         temperature=0.7
@@ -41,11 +47,17 @@ async def monthlyReport(request: Request):
     return await mgr.generate(
         DAILY_REPORT_PROMPTS,
         placeholders={
-            "input_data": {
+            "metrics": {
                 "pm25": [12, 14, 20, 18],
                 "co2": [600, 720, 680, 650], 
                 "temperature": [24.1, 24.3, 23.9, 24.0],
                 "humidity": [45, 48, 50, 46] 
+            },
+            "deviceStatus": {
+                "fan": True,
+                "ac": False,
+                "robot": False,
+                "heat": True
             }
         },
         temperature=0.7
