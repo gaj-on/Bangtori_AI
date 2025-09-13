@@ -20,6 +20,8 @@ import asyncio
 from src.app_context import AppContext
 
 from service.basic.basic_api import router as basic_router
+from service.ai.llm_api import router as llm_router
+
 
 class AppFactory:
     """애플리케이션 팩토리 클래스"""
@@ -91,6 +93,7 @@ class AppFactory:
         """라우터 등록"""
         routers = [
             basic_router,
+            llm_router
         ]
         for router in routers:
             app.include_router(router)
@@ -103,7 +106,8 @@ class AppFactory:
             ctx = app.state.ctx
 
             # 초기화 후 연결 설정
-            await AppFactory._initialize_handlers(ctx)
+            # await AppFactory._initialize_handlers(ctx)
+            await AppFactory._initialize_managers(ctx)
             await AppFactory._initialize_algorithms(ctx)
             
             ctx.log.info("     == Initialization complete")
@@ -116,10 +120,17 @@ class AppFactory:
             traceback.print_exc()
             raise
         
+    # @staticmethod
+    # async def _initialize_handlers(ctx: AppContext) -> None:
+    #     """핸들러 초기화"""    
+    #     ctx.log.info("     - Initializing handlers...")
+    
     @staticmethod
-    async def _initialize_handlers(ctx: AppContext) -> None:
-        """핸들러 초기화"""    
-        ctx.log.info("     - Initializing handlers...")
+    async def _initialize_managers(ctx: AppContext) -> None:
+        """매니저 초기화"""
+        print("     - Initializing handlers...")   
+        ctx._init_logger()
+        AppFactory._test_logging(ctx.log)
         
     @staticmethod
     async def _initialize_algorithms(ctx: AppContext) -> None:

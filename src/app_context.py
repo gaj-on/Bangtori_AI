@@ -13,6 +13,7 @@ from typing import Any
 from typing import Optional
 
 import modules.logger as logger
+from service.ai.llm_manager import LLMManager
 
 class LoggerConfig(BaseModel):
     level: str
@@ -28,6 +29,10 @@ class HTTPConfig(BaseModel):
     allow_methods: list[str]
     allow_headers: list[str]
     allow_credentials: bool
+    
+class LLMConfig(BaseModel):
+    provider: str           # "ollama" | "openai" | ...
+    model: str              # "llama3.2" 등
 
 class AppConfig(BaseModel):
     # 상위 항목 직접 정의
@@ -43,24 +48,14 @@ class AppConfig(BaseModel):
     logger: LoggerConfig
     http_config: Optional[HTTPConfig] = None
 
-    # 시스템 모니터링 관련 기본값 설정
-    enable_monitoring: Optional[bool] = True
-    monitoring_interval: Optional[int] = 10
-
     # 서비스 관련
+    llm: Optional[LLMConfig] = None
 
 class AppContext:
     def __init__(self):
         self.cfg = {}
         self.log = None
-        
-        # 핸들러
-
-        # 매니저
-        self.system_monitor = None
-
-        # 서비스
-        # self.llm_manager = {}
+        self.llm_manager: Optional[LLMManager] = None
 
     def load_config(self, path: str) -> AppConfig:
         """JSON 파일을 로드하고 AppConfig 모델로 파싱"""
@@ -99,7 +94,25 @@ class AppContext:
 
         self.log.debug("- end init logger")
 
+
     def _init_llms(self):
+        if not self.cfg or not getattr(self.cfg, "llm", None):
+            if self.log:
+                self.log.warning("[LLM] llm config missing; skipping LLM init")
+            return
+
         self.log.debug("+ start init LLMs")
 
-        self.llm_manager = {}
+        try:
+            # provider 직접 주입
+            self.llm_manager = LLMManager(
+                ctx=self,
+                provider=self.cfg.llm.provider,
+                model=self.cfg.llm.model
+            )
+            if self.log:
+                self.log.info(f"[LLM] manager ready (model={self.cfg.llm.model})")
+        except Exception as e:
+            if self.log:
+                self.log.error(f"[LLM] init failed: {e}")
+            raise
