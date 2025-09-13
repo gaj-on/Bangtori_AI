@@ -1,17 +1,110 @@
 # llm_manager.py
+import json
+import re
+import os  # API 키 관리를 위해 추가
 import ollama
+import google.generativeai as genai  # Gemini 라이브러리 추가
 from asyncio import to_thread
+from typing import Any, Dict, List, Optional, Union
+
+from src.service.conf.gemini_api_key import GEMINI_API_KEY
+
+_PLACEHOLDER_RE = re.compile(r"\{\{\s*([A-Za-z0-9_]+)\s*\}\}")
 
 class LLMManager:
     def __init__(self, ctx, provider: str, model: str):
         self.ctx = ctx
+        self.provider = provider
         self.model = model
 
-    async def generate(self, prompt: str, **options) -> str:
-        """프롬프트 그대로 보내고 텍스트만 반환"""
-        def _call():
-            args = {"model": self.model, "prompt": prompt}
-            if options:
-                args["options"] = options
-            return ollama.generate(**args)
-        return (await to_thread(_call)).get("response", "")
+        if self.provider == "ollama":
+            # Ollama는 별도의 초기 클라이언트 설정이 필요 없습니다.
+            pass
+        elif self.provider == "gemini":
+            # Gemini 클라이언트 설정
+            # 보안을 위해 환경 변수에서 API 키를 가져옵니다.
+            api_key = GEMINI_API_KEY
+            if not api_key:
+                raise ValueError("GEMINI_API_KEY 환경 변수가 설정되지 않았습니다.")
+            
+            genai.configure(api_key=api_key)
+            self.gemini_model = genai.GenerativeModel(self.model)
+        else:
+            # 지원하지 않는 provider일 경우 에러 발생
+            raise ValueError(f"Unsupported provider: {provider}. Supported providers are 'ollama' and 'gemini'.")
+
+    async def generate(
+        self,
+        prompt: Union[str, List[str]],
+        *,
+        placeholders: Optional[Dict[str, Any]] = None,
+        **options
+    ) -> str:
+        final_prompt = self._compose_prompt(prompt, placeholders=placeholders)
+
+        if self.provider == "ollama":
+            def _call_ollama():
+                args = {"model": self.model, "prompt": final_prompt}
+                if options:
+                    args["options"] = options
+                return ollama.generate(**args)
+
+            response_data = await to_thread(_call_ollama)
+            return response_data.get("response", "")
+
+        elif self.provider == "gemini":
+            # Gemini API 옵션을 GenerationConfig로 변환합니다.
+            # options 딕셔너리에 있는 키와 값을 기반으로 설정합니다.
+            generation_config = genai.types.GenerationConfig(**options)
+
+            def _call_gemini():
+                # 동기 함수인 generate_content를 비동기 컨텍스트에서 실행합니다.
+                return self.gemini_model.generate_content(
+                    final_prompt,
+                    generation_config=generation_config
+                )
+
+            try:
+                response = await to_thread(_call_gemini)
+                return response.text
+            except Exception as e:
+                print(f"Gemini API 호출 중 오류 발생: {e}")
+                # 필요한 경우 response.prompt_feedback 등을 통해 추가 정보 확인 가능
+                return ""
+        
+        return "" # __init__에서 provider를 검증하므로 실행될 일 없음
+
+    # ------------------------
+    # 내부: 프롬프트 합성 + 치환 (변경 없음)
+    # ------------------------
+    def _compose_prompt(
+        self,
+        prompt: Union[str, List[str]],
+        *,
+        placeholders: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        if isinstance(prompt, list):
+            rendered = [self._render_placeholders(str(p), placeholders) for p in prompt if p]
+            return "\n\n".join(rendered)
+        return self._render_placeholders(str(prompt), placeholders)
+
+    def _render_placeholders(self, text: str, placeholders: Optional[Dict[str, Any]]) -> str:
+        if not placeholders:
+            return text
+
+        def _to_str(val: Any) -> str:
+            if val is None:
+                return ""
+            if isinstance(val, (dict, list)):
+                return json.dumps(val, ensure_ascii=False, indent=2)
+            if isinstance(val, (str, int, float, bool)):
+                return str(val)
+            return repr(val)
+
+        def repl(m: re.Match) -> str:
+            key = m.group(1)
+            if key in placeholders:
+                return _to_str(placeholders[key])
+            return m.group(0)
+
+        return _PLACEHOLDER_RE.sub(repl, text)

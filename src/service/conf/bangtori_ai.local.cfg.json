@@ -15,8 +15,8 @@
     },
     
     "llm": {
-      "provider": "ollama",
-      "model": "llama4:scout"
+      "provider": "gemini",
+      "model": "gemini-2.0-flash-lite"
     },
     
     "logger": {
