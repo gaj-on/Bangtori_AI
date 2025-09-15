@@ -109,7 +109,18 @@ GENERATE_DAILY_REPORT = """
 """
 
 GENERATE_MONTHLY_REPORT = """
+출력 형식 예시:
+{
+  "aiMonthlyReport": "하루 요약 문장 (예: 이산화탄소 수치가 높아 환기가 필요합니다.)",
+}
 
+- aiMonthlyReport는 이번달 동안의 상태 평가를 40자 이하의 한 문장으로 작성합니다.
+
+# 입력 데이터
+다음은 {{ time_range }} 동안 수집된 환경 데이터입니다. 이를 기반으로 평가를 진행하세요.
+
+[INPUT_DATA]
+{{ metrics }}
 """
 
 GENERATE_PHOTO_REPORT = """
