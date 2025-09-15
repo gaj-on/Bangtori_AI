@@ -2,7 +2,6 @@
 import json
 import re
 import os  # API 키 관리를 위해 추가
-import ollama
 import google.generativeai as genai  # Gemini 라이브러리 추가
 from asyncio import to_thread
 from typing import Any, Dict, List, Optional, Union
@@ -17,10 +16,7 @@ class LLMManager:
         self.provider = provider
         self.model = model
 
-        if self.provider == "ollama":
-            # Ollama는 별도의 초기 클라이언트 설정이 필요 없습니다.
-            pass
-        elif self.provider == "gemini":
+        if self.provider == "gemini":
             # Gemini 클라이언트 설정
             # 보안을 위해 환경 변수에서 API 키를 가져옵니다.
             api_key = GEMINI_API_KEY
@@ -31,7 +27,7 @@ class LLMManager:
             self.gemini_model = genai.GenerativeModel(self.model)
         else:
             # 지원하지 않는 provider일 경우 에러 발생
-            raise ValueError(f"Unsupported provider: {provider}. Supported providers are 'ollama' and 'gemini'.")
+            raise ValueError(f"Unsupported provider: {provider}. Supported provider is 'gemini'.")
 
     async def generate(
         self,
@@ -42,17 +38,7 @@ class LLMManager:
     ) -> str:
         final_prompt = self._compose_prompt(prompt, placeholders=placeholders)
 
-        if self.provider == "ollama":
-            def _call_ollama():
-                args = {"model": self.model, "prompt": final_prompt}
-                if options:
-                    args["options"] = options
-                return ollama.generate(**args)
-
-            response_data = await to_thread(_call_ollama)
-            return response_data.get("response", "")
-
-        elif self.provider == "gemini":
+        if self.provider == "gemini":
             # Gemini API 옵션을 GenerationConfig로 변환합니다.
             # options 딕셔너리에 있는 키와 값을 기반으로 설정합니다.
             generation_config = genai.types.GenerationConfig(**options)
