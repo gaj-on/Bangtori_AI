@@ -2,13 +2,13 @@
     "environment": "local",
     "project_name": "Bangtori_AI",
     "api_v1_str": "/api/v1",
-    "host": "localhost",
+    "host": "https://bangtori-be.onrender.com",
     "port": 3000,
     "secret_key": "changethis-secret-key",
     "access_token_expire_minutes": 1440,
 
     "http_config": {
-      "allow_origins": ["http://localhost:8000"],
+      "allow_origins": ["https://bangtori-be.onrender.com"],
       "allow_methods": ["*"],
       "allow_headers": ["*"],
       "allow_credentials": true

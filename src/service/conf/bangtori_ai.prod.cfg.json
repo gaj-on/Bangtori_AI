@@ -1,7 +1,6 @@
 {
-    "environment": "local",
+    "environment": "production",
     "project_name": "Bangtori_AI",
-    "api_v1_str": "/api/v1",
     "host": "localhost",
     "port": 3000,
     "secret_key": "changethis-secret-key",
