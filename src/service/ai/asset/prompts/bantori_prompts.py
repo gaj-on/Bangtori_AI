@@ -77,23 +77,23 @@ GENERATE_DAILY_REPORT = """
   - 0~39점: 매우 나쁨
 
 - deviceControlList는 환경 상태와 현재 가전 상태를 바탕으로 필요한 제어를 결정합니다.
-  - fan: 환풍기
-  - ac: 에어컨
-  - robot: 로봇청소기
-  - heat: 난방기
+  - FAN: 환풍기
+  - AC: 에어컨
+  - ROBOT: 로봇청소기
+  - HEAT: 난방기
   - true는 전원을 켜야 함을 의미하고, false는 꺼야 함을 의미합니다.
 
 - 아래 제어 기준을 참고하여 판단합니다:
-  - 환풍기(fan) 제어 기준:
+  - 환풍기(FAN) 제어 기준:
     - CO2 평균 > 1000ppm → fan: true
     - TVOC 평균 > 400ppb → fan: true
     - PM2.5 평균 > 75 → fan: true
-  - 에어컨(ac) 제어 기준:
+  - 에어컨(AC) 제어 기준:
     - 온도 평균 > 28도 → ac: true
-  - 난방기(heat) 제어 기준:
+  - 난방기(HEAT) 제어 기준:
     - 온도 평균 < 18도 → heat: true
-  - 로봇청소기(robot) 제어 기준:
-    - PM2.5 평균 > 75 AND 현재 로봇청소기가 꺼져 있으면 → robot: true
+  - 로봇청소기(ROBOT) 제어 기준:
+    - PM2.5 평균 > 75 AND 현재 로봇청소기가 꺼져 있으면 → ROBOT: true
 
 # 입력 데이터
 다음은 24시간 동안 수집된 환경 데이터입니다. 이를 기반으로 평가를 진행하세요.

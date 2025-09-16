@@ -23,7 +23,7 @@ async def daily_report(request: Request):
     오늘 하루(서울 기준 0시~24시) 구간의 telemetry 데이터를 조회
     """
     ctx = request.app.state.ctx
-    telemetry_base = getattr(ctx, "host", "https://bangtori-be.onrender.com/api")
+    base_url = getattr(ctx, "host", "https://bangtori-be.onrender.com/api")
 
     # 오늘 0시~내일 0시 (서울 고정)
     today = datetime.now(ZoneInfo("Asia/Seoul")).date()
@@ -33,46 +33,36 @@ async def daily_report(request: Request):
     start_epoch = int(start_dt.timestamp())
     end_epoch = int(end_dt.timestamp())
 
-    url = f"{telemetry_base}/telemetry/range"
-    params = {"from": start_epoch, "toExclusive": end_epoch}
+    metrics_url = f"{base_url}/telemetry/range"
+    device_url = f"{base_url}/appliances"
+    m_params = {"from": start_epoch, "toExclusive": end_epoch}
 
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            r = await client.get(url, params=params)
-            r.raise_for_status()
-            payload = r.json()
+            m_r = await client.get(metrics_url, params=m_params)
+            m_r.raise_for_status()
+            m_payload = m_r.json()
+            metrics = parse_metrics(m_payload)
+
+            d_r = await client.get(device_url)
+            d_r.raise_for_status()
+            d_payload = d_r.json()
+
+            return {
+            # resp_text = await ctx.llm_manager.generate(
+                # DAILY_REPORT_PROMPTS,
+                # placeholders={
+                    "metrics": metrics,
+                    "deviceStatus": d_payload
+                },
+                # temperature=0.7
+            # }
+            # )
+            # return ctx.llm_manager.parse_reports(resp_text)
+        
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Telemetry backend call failed: {e}")
 
-    return {
-        "date": today.isoformat(),
-        "from": start_epoch,
-        "toExclusive": end_epoch,
-        "source": f"{url}?from={start_epoch}&toExclusive={end_epoch}",
-        "data": payload,
-    }
-
-    # resp_text = await ctx.llm_manager.generate(
-    #     DAILY_REPORT_PROMPTS,
-    #     placeholders={
-    #         "metrics": {
-    #             "dust": [12, 14, 20, 18],
-    #             "co2": [600, 720, 680, 650], 
-    #             "tvoc": [600, 720, 680, 650], 
-    #             "temp": [24.1, 24.3, 23.9, 24.0],
-    #             "humi": [45, 48, 50, 46] 
-    #         },
-    #         "deviceStatus": {
-    #             "fan": True,
-    #             "ac": False,
-    #             "robot": False,
-    #             "heat": True
-    #         }
-    #     },
-    #     temperature=0.7
-    # )
-
-    # return ctx.llm_manager.parse_reports(resp_text)
 
 # GET /api/analyze/monthlyReport
 @router.get("/monthlyReport")
@@ -98,3 +88,14 @@ async def monthlyReport(request: Request):
     )
 
     return ctx.llm_manager.parse_reports(resp_text)
+
+def parse_metrics(payload: dict) -> dict:
+    metrics = {
+        "dust":  [point["value"] for point in payload.get("series", {}).get("dust", [])],
+        "co2":   [point["value"] for point in payload.get("series", {}).get("co2", [])],
+        "tvoc":  [point["value"] for point in payload.get("series", {}).get("tvoc", [])],
+        "temp":  [point["value"] for point in payload.get("series", {}).get("temp", [])],
+        "humi":  [point["value"] for point in payload.get("series", {}).get("humi", [])],
+    }
+
+    return metrics
