@@ -48,17 +48,17 @@ async def daily_report(request: Request):
             d_r.raise_for_status()
             d_payload = d_r.json()
 
-            return {
-            # resp_text = await ctx.llm_manager.generate(
-                # DAILY_REPORT_PROMPTS,
-                # placeholders={
+            # return {
+            resp_text = await ctx.llm_manager.generate(
+                DAILY_REPORT_PROMPTS,
+                placeholders={
                     "metrics": metrics,
                     "deviceStatus": d_payload
                 },
-                # temperature=0.7
+                temperature=0.7
             # }
-            # )
-            # return ctx.llm_manager.parse_reports(resp_text)
+            )
+            return ctx.llm_manager.parse_reports(resp_text)
         
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Telemetry backend call failed: {e}")
