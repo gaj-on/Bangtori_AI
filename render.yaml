@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: bangtori_ai
+    env: python
+    rootDir: .
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
+      mkdir -p logs
+    startCommand: >
+      python src/bangtori_ai.py
