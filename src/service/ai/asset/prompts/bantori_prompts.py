@@ -123,6 +123,10 @@ GENERATE_MONTHLY_REPORT = """
 {{ metrics }}
 """
 
+GENERATE_TIP_REPORT = """
+
+"""
+
 GENERATE_PHOTO_REPORT = """
 
 """
