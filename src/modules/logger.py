@@ -132,6 +132,11 @@ def setup_logger(log_level, log_path, log_max_files):
     # 백업 파일 매칭 정규식 설정
     base_log_name = os.path.basename(log_filename)
     escaped_base = re.escape(base_log_name)
+
+    log_dir = os.path.dirname(log_filename)
+    if log_dir:  # 빈 문자열이 아닐 때만
+        os.makedirs(log_dir, exist_ok=True)
+        
     fileHandler.extMatch = re.compile(rf"{escaped_base}\.\d{{8}}$")
     fileHandler.suffix = SUFFIX
     
