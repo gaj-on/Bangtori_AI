@@ -92,6 +92,7 @@ GENERATE_DAILY_REPORT = """
     - 온도 평균 > 28도 → ac: true
   - 난방기(HEAT) 제어 기준:
     - 온도 평균 < 18도 → heat: true
+    - 습도 평균 > 70% → heat: true  (습한 날씨일 경우 실내 습기 제거 및 건조 목적)
   - 로봇청소기(ROBOT) 제어 기준:
     - PM2.5 평균 > 75 AND 현재 로봇청소기가 꺼져 있으면 → ROBOT: true
 

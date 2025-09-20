@@ -3,6 +3,7 @@
 
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+from typing import Dict, Iterable, Any
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request
@@ -39,24 +40,25 @@ async def daily_report(request: Request):
 
     try:
         async with httpx.AsyncClient(timeout=10) as client:
+            # telemetry
             m_r = await client.get(metrics_url, params=m_params)
             m_r.raise_for_status()
             m_payload = m_r.json()
-            metrics = parse_metrics(m_payload)
+            metrics = parse_metrics(m_payload)  
 
+            # devices
             d_r = await client.get(device_url)
             d_r.raise_for_status()
-            d_payload = d_r.json()
+            d_payload = d_r.json()             
+            device_status = parse_device_status(d_payload)
 
-            # return {
             resp_text = await ctx.llm_manager.generate(
                 DAILY_REPORT_PROMPTS,
                 placeholders={
                     "metrics": metrics,
-                    "deviceStatus": d_payload
+                    "deviceStatus": device_status
                 },
                 temperature=0.7
-            # }
             )
             return ctx.llm_manager.parse_reports(resp_text)
         
@@ -89,6 +91,11 @@ async def monthlyReport(request: Request):
 
     return ctx.llm_manager.parse_reports(resp_text)
 
+# GET /api/tip/category
+@router.get("/tip/category")
+
+
+
 def parse_metrics(payload: dict) -> dict:
     metrics = {
         "dust":  [point["value"] for point in payload.get("series", {}).get("dust", [])],
@@ -99,3 +106,19 @@ def parse_metrics(payload: dict) -> dict:
     }
 
     return metrics
+
+def parse_device_status(items: Iterable[dict]) -> Dict[str, bool]:
+    summary: Dict[str, bool] = {}
+    for it in items or []:
+        try:
+            dev_type = str(it.get("type", "")).strip()
+            if not dev_type:
+                continue
+            key = dev_type.upper()
+            on = bool(it.get("on", False))
+            # 하나라도 True면 True
+            summary[key] = summary.get(key, False) or on
+        except Exception:
+            # 단일 항목 오류는 무시하고 계속
+            continue
+    return summary
