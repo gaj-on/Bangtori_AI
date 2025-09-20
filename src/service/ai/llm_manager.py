@@ -1,12 +1,10 @@
-# llm_manager.py
 import json
 import re
 import time
+import os  # 추가
 import google.generativeai as genai  # Gemini 라이브러리 추가
 from asyncio import to_thread
 from typing import Any, Dict, List, Optional, Union
-
-from src.service.conf.gemini_api_key import GEMINI_API_KEY
 
 _PLACEHOLDER_RE = re.compile(r"\{\{\s*([A-Za-z0-9_]+)\s*\}\}")
 
@@ -17,16 +15,14 @@ class LLMManager:
         self.model = model
 
         if self.provider == "gemini":
-            # Gemini 클라이언트 설정
             # 보안을 위해 환경 변수에서 API 키를 가져옵니다.
-            api_key = GEMINI_API_KEY
+            api_key = os.environ.get("GEMINI_API_KEY")
             if not api_key:
                 raise ValueError("GEMINI_API_KEY 환경 변수가 설정되지 않았습니다.")
             
             genai.configure(api_key=api_key)
             self.gemini_model = genai.GenerativeModel(self.model)
         else:
-            # 지원하지 않는 provider일 경우 에러 발생
             raise ValueError(f"Unsupported provider: {provider}. Supported provider is 'gemini'.")
 
     async def generate(
