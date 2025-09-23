@@ -55,12 +55,6 @@ GENERATE_DAILY_REPORT = """
     "세 번째 분석 문장"
   ],
   "aiDailyScore": 0~100 사이의 정수,
-  "deviceControlList": {
-      "fan": bool,
-      "ac": bool,
-      "robot": bool,
-      "heat": bool
-  }
 }
 
 - aiDailyReport는 하루 상태를 한 문장으로 요약합니다.
@@ -81,12 +75,6 @@ GENERATE_DAILY_REPORT = """
 
 [INPUT_DATA]
 {{ metrics }}
-
-# 현재 가전 상태
-현재 가전 on/off 상태도 참고하여 판단해야 합니다.
-
-[DEVICE_STATUS]
-{{ deviceStatus }}
 """
 
 GENERATE_MONTHLY_REPORT = """
