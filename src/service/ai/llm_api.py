@@ -93,9 +93,6 @@ async def monthlyReport(request: Request):
 
 # GET /api/tip/category
 @router.get("/tip/category")
-
-
-
 def parse_metrics(payload: dict) -> dict:
     metrics = {
         "dust":  [point["value"] for point in payload.get("series", {}).get("dust", [])],
