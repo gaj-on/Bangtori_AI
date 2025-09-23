@@ -46,17 +46,17 @@ async def daily_report(request: Request):
             m_payload = m_r.json()
             metrics = parse_metrics(m_payload)  
 
-            # devices
-            d_r = await client.get(device_url)
-            d_r.raise_for_status()
-            d_payload = d_r.json()             
-            device_status = parse_device_status(d_payload)
+            # # devices
+            # d_r = await client.get(device_url)
+            # d_r.raise_for_status()
+            # d_payload = d_r.json()             
+            # device_status = parse_device_status(d_payload)
 
             resp_text = await ctx.llm_manager.generate(
                 DAILY_REPORT_PROMPTS,
                 placeholders={
                     "metrics": metrics,
-                    "deviceStatus": device_status
+                    # "deviceStatus": device_status
                 },
                 temperature=0.7
             )
