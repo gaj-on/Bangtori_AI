@@ -9,8 +9,10 @@ import httpx
 from fastapi import APIRouter, HTTPException, Request
 
 import src.common.common_codes as codes
-from src.service.ai.asset.prompts.prompts_cfg import (SYSTEM_PROMPTS, DAILY_REPORT_PROMPTS, MONTHLY_REPORT_PROMPTS)
-
+from src.service.ai.asset.prompts.prompts_cfg import (SYSTEM_PROMPTS, 
+                                                      DAILY_REPORT_PROMPTS, 
+                                                      MONTHLY_REPORT_PROMPTS, 
+                                                      TIP_REPORT_PROMPTS)
 
 # 라우터 등록은 여기서 하고 실제 로직은 service에서 관리
 # http://localhost:8000/
@@ -20,9 +22,6 @@ router = APIRouter(prefix="/api/analyze", tags=["analyze"])
 # GET /api/analyze/dailyReport
 @router.get("/dailyReport")
 async def daily_report(request: Request):
-    """
-    오늘 하루(서울 기준 0시~24시) 구간의 telemetry 데이터를 조회
-    """
     ctx = request.app.state.ctx
     base_url = getattr(ctx, "host", "https://bangtori-be.onrender.com/api")
 
@@ -71,28 +70,88 @@ async def daily_report(request: Request):
 async def monthlyReport(request: Request):
     ctx = request.app.state.ctx
     mgr = ctx.llm_manager
+    base_url = getattr(ctx, "host", "https://bangtori-be.onrender.com/api")
 
-    resp_text = await mgr.generate(
-        MONTHLY_REPORT_PROMPTS,
-        placeholders={
-            "metrics": {
-                "pm25": [12, 14, 20, 18],
-                "co2": [600, 720, 680, 650], 
-                "temperature": [24.1, 24.3, 23.9, 24.0],
-                "humidity": [45, 48, 50, 46] 
+    # 이번 달 1일 ~ 다음 달 1일 (서울 고정)
+    today = datetime.now(ZoneInfo("Asia/Seoul")).date()
+    start_dt = datetime(today.year, today.month, 1, tzinfo=ZoneInfo("Asia/Seoul"))
+
+    if today.month == 12:  # 12월이면 다음 해 1월
+        end_dt = datetime(today.year + 1, 1, 1, tzinfo=ZoneInfo("Asia/Seoul"))
+    else:
+        end_dt = datetime(today.year, today.month + 1, 1, tzinfo=ZoneInfo("Asia/Seoul"))
+
+    start_epoch = int(start_dt.timestamp())
+    end_epoch = int(end_dt.timestamp())
+
+    metrics_url = f"{base_url}/telemetry/range"
+    m_params = {"from": start_epoch, "toExclusive": end_epoch}
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            # 1달치 telemetry 데이터 조회
+            m_r = await client.get(metrics_url, params=m_params)
+            m_r.raise_for_status()
+            m_payload = m_r.json()
+            metrics = parse_metrics(m_payload)
+
+        # LLM 프롬프트 생성
+        resp_text = await mgr.generate(
+            MONTHLY_REPORT_PROMPTS,
+            placeholders={
+                "metrics": metrics,
+                "time_range": {
+                    "start": start_dt.strftime("%Y-%m-%d"),
+                    "end": (end_dt - timedelta(days=1)).strftime("%Y-%m-%d")
+                }
             },
-            "time_range": {
-                "start": "2024-09-01",
-                "end": "2024-09-30"
-            }
-        },
-        temperature=0.7
-    )
+            temperature=0.7
+        )
 
-    return ctx.llm_manager.parse_reports(resp_text)
+        return mgr.parse_reports(resp_text)
+
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Monthly telemetry backend call failed: {e}")
+
 
 # GET /api/tip/category
 @router.get("/tip/category")
+async def tip_category(request: Request):
+    ctx = request.app.state.ctx
+    base_url = getattr(ctx, "host", "https://bangtori-be.onrender.com/api")
+
+    # 오늘 0시~내일 0시 (서울 고정)
+    today = datetime.now(ZoneInfo("Asia/Seoul")).date()
+    start_dt = datetime(today.year, today.month, today.day, tzinfo=ZoneInfo("Asia/Seoul"))
+    end_dt = start_dt + timedelta(days=1)
+
+    start_epoch = int(start_dt.timestamp())
+    end_epoch = int(end_dt.timestamp())
+
+    metrics_url = f"{base_url}/telemetry/range"
+    m_params = {"from": start_epoch, "toExclusive": end_epoch}
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            # telemetry
+            m_r = await client.get(metrics_url, params=m_params)
+            m_r.raise_for_status()
+            m_payload = m_r.json()
+            metrics = parse_metrics(m_payload)  
+
+            resp_text = await ctx.llm_manager.generate(
+                TIP_REPORT_PROMPTS,
+                placeholders={
+                    "metrics": metrics,
+                },
+                temperature=0.7
+            )
+            return ctx.llm_manager.parse_reports(resp_text)
+        
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Telemetry backend call failed: {e}")
+
+
 def parse_metrics(payload: dict) -> dict:
     metrics = {
         "dust":  [point["value"] for point in payload.get("series", {}).get("dust", [])],
