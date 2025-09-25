@@ -114,8 +114,8 @@ async def monthlyReport(request: Request):
         raise HTTPException(status_code=502, detail=f"Monthly telemetry backend call failed: {e}")
 
 
-# GET /api/tip/category
-@router.get("/tip/category")
+# GET /api/analyze/category
+@router.get("/category")
 async def tip_category(request: Request):
     ctx = request.app.state.ctx
     base_url = getattr(ctx, "host", "https://bangtori-be.onrender.com/api")
