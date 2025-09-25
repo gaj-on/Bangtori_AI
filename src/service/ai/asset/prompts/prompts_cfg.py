@@ -19,3 +19,9 @@ MONTHLY_REPORT_PROMPTS = [
     bantori_prompts.GENERATE_MONTHLY_REPORT,
     bantori_prompts.JSON_OUTPUT_PROMPT
 ]
+
+# 일별 카테고리 프롬프트
+TIP_REPORT_PROMPTS = [
+    bantori_prompts.GENERATE_TIP_REPORT,
+    bantori_prompts.JSON_OUTPUT_PROMPT
+]
